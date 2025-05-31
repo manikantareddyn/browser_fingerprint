@@ -1,0 +1,119 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <title>Simple Browser Fingerprinting</title>
+</head>
+<body>
+  <h2>Your Browser Fingerprint:</h2>
+  <pre id="output"></pre>
+
+  <script>
+    async function getFingerprint() {
+      const fingerprint = {
+        userAgent: navigator.userAgent,
+        language: navigator.language,
+        platform: navigator.platform,
+        timezone: Intl.DateTimeFormat().resolvedOptions().timeZone,
+        screenResolution: `${screen.width}x${screen.height}`,
+        colorDepth: screen.colorDepth,
+        deviceMemory: navigator.deviceMemory || 'N/A',
+        hardwareConcurrency: navigator.hardwareConcurrency || 'N/A',
+        plugins: Array.from(navigator.plugins, p => p.name),
+        doNotTrack: navigator.doNotTrack,
+        canvasHash: await getCanvasFingerprint()
+      };
+
+      document.getElementById("output").textContent = JSON.stringify(fingerprint, null, 2);
+
+      // Send to your server for analysis (optional)
+      // fetch('/api/fingerprint', {
+      //   method: 'POST',
+      //   headers: {'Content-Type': 'application/json'},
+      //   body: JSON.stringify(fingerprint)
+      // });
+    }
+
+    function getCanvasFingerprint() {
+      return new Promise((resolve) => {
+        const canvas = document.createElement('canvas');
+        const ctx = canvas.getContext('2d');
+        ctx.textBaseline = 'top';
+        ctx.font = '16px Arial';
+        ctx.textBaseline = 'alphabetic';
+        ctx.fillStyle = '#f60';
+        ctx.fillRect(125, 1, 62, 20);
+        ctx.fillStyle = '#069';
+        ctx.fillText('Browser Fingerprint', 2, 15);
+        ctx.fillStyle = 'rgba(102, 204, 0, 0.7)';
+        ctx.fillText('Browser Fingerprint', 4, 17);
+        const dataURL = canvas.toDataURL();
+        const hash = sha256(dataURL); // Optional: use CryptoJS or your own hash function
+        resolve(hash);
+      });
+    }
+
+    function sha256(str) {
+      // Simple SHA256 using SubtleCrypto
+      const encoder = new TextEncoder();
+      const data = encoder.encode(str);
+      return crypto.subtle.digest('SHA-256', data).then(buffer => {
+        return Array.from(new Uint8Array(buffer)).map(b => b.toString(16).padStart(2, '0')).join('');
+      });
+    }
+
+    getFingerprint();
+  </script>async function getFingerprint() {
+  const fingerprint = {
+    userAgent: navigator.userAgent,
+    language: navigator.language,
+    platform: navigator.platform,
+    timezone: Intl.DateTimeFormat().resolvedOptions().timeZone,
+    screenResolution: `${screen.width}x${screen.height}`,
+    colorDepth: screen.colorDepth,
+    deviceMemory: navigator.deviceMemory || 'N/A',
+    hardwareConcurrency: navigator.hardwareConcurrency || 'N/A',
+    plugins: Array.from(navigator.plugins, p => p.name),
+    doNotTrack: navigator.doNotTrack,
+    canvasHash: await getCanvasFingerprint()
+  };
+
+  document.getElementById("output").textContent = JSON.stringify(fingerprint, null, 2);
+
+  // Optional: Send to backend
+  fetch('/api/fingerprint', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify(fingerprint)
+  });
+}
+
+function getCanvasFingerprint() {
+  return new Promise((resolve) => {
+    const canvas = document.createElement('canvas');
+    const ctx = canvas.getContext('2d');
+    ctx.textBaseline = 'top';
+    ctx.font = '16px Arial';
+    ctx.textBaseline = 'alphabetic';
+    ctx.fillStyle = '#f60';
+    ctx.fillRect(125, 1, 62, 20);
+    ctx.fillStyle = '#069';
+    ctx.fillText('Browser Fingerprint', 2, 15);
+    ctx.fillStyle = 'rgba(102, 204, 0, 0.7)';
+    ctx.fillText('Browser Fingerprint', 4, 17);
+    const dataURL = canvas.toDataURL();
+    sha256(dataURL).then(resolve);
+  });
+}
+
+function sha256(str) {
+  const encoder = new TextEncoder();
+  const data = encoder.encode(str);
+  return crypto.subtle.digest('SHA-256', data).then(buffer => {
+    return Array.from(new Uint8Array(buffer)).map(b => b.toString(16).padStart(2, '0')).join('');
+  });
+}
+
+getFingerprint();
+
+</body>
+</html>
