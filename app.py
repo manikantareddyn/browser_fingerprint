@@ -7,7 +7,9 @@ from dotenv import load_dotenv
 load_dotenv()
 app = Flask(__name__)
 
-client = MongoClient(os.getenv("MONGO_URI", "mongodb://localhost:27017/"))
+# Secure MongoDB connection string from .env
+MONGO_URI = os.getenv("MONGO_URI")
+client = MongoClient(MONGO_URI)
 db = client["fingerprint_db"]
 collection = db["fingerprints"]
 
@@ -17,14 +19,17 @@ def index():
 
 @app.route('/api/fingerprint', methods=['POST'])
 def save_fingerprint():
-    data = request.json
+    data = request.get_json()
     fingerprint_hash = data.get('canvasHash')
     if not fingerprint_hash:
         return jsonify({"error": "Missing fingerprint hash"}), 400
 
     existing = collection.find_one({"canvasHash": fingerprint_hash})
     if existing:
-        return jsonify({"message": "Fingerprint already exists", "firstSeen": existing["timestamp"]}), 200
+        return jsonify({
+            "message": "Fingerprint already exists",
+            "firstSeen": existing.get("timestamp")
+        }), 200
 
     data["timestamp"] = datetime.utcnow()
     collection.insert_one(data)
@@ -36,4 +41,5 @@ def get_fingerprints():
     return jsonify(fingerprints), 200
 
 if __name__ == '__main__':
-    app.run(debug=True)
+    # Run app on the port provided by Render or default to 5000 locally
+    app.run(host='0.0.0.0', port=int(os.environ.get('PORT', 5000)), debug=True)
